@@ -4,6 +4,81 @@
 
 #include "log.h"
 
+LogLine::LogLine(const char *text, int width, int height):
+		Glib::ObjectBase("LogLine"), Gtk::Widget(),
+		text_(text), width_(width), height_(height) {
+	set_has_window(true);
+	set_name("log-line");
+
+	Pango::FontDescription font;
+	font.set_family("Monospace");
+	layout_ = create_pango_layout(text_);
+	layout_->set_font_description(font);
+}
+
+void LogLine::get_preferred_width_vfunc(int &min, int &nat) const {
+	min = nat = std::max(layout_->get_logical_extents().get_width() / Pango::SCALE, width_);
+}
+
+void LogLine::get_preferred_width_for_height_vfunc(int h, int &min, int &nat) const {
+	min = nat = std::max(layout_->get_logical_extents().get_width() / Pango::SCALE, width_);
+}
+
+void LogLine::get_preferred_height_vfunc(int &min, int &nat) const {
+	min = nat = height_;
+}
+
+void LogLine::get_preferred_height_for_width_vfunc(int w, int &min, int &nat) const {
+	min = nat = height_;
+}
+
+void LogLine::on_size_allocate(Gtk::Allocation &allocation) {
+	set_allocation(allocation);
+	if (get_window()) {
+		get_window()->move_resize(
+				allocation.get_x(), allocation.get_y(),
+				allocation.get_width(), allocation.get_height());
+	}
+}
+
+void LogLine::on_realize() {
+	set_realized();
+
+	if (!get_window()) {
+		GdkWindowAttr attributes{};
+		Gtk::Allocation allocation = get_allocation();
+		attributes.x = allocation.get_x();
+		attributes.y = allocation.get_y();
+		attributes.width = allocation.get_width();
+		attributes.height = allocation.get_height();
+		attributes.event_mask = get_events() | Gdk::EXPOSURE_MASK;
+		attributes.window_type = GDK_WINDOW_CHILD;
+		attributes.wclass = GDK_INPUT_OUTPUT;
+
+		auto window = Gdk::Window::create(
+				get_parent_window(), &attributes, GDK_WA_X | GDK_WA_Y);
+		set_window(window);
+
+		window->set_user_data(gobj());
+	}
+}
+
+bool LogLine::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
+	const Gtk::Allocation alloc = get_allocation();
+	cr->set_source_rgb(1, 0, 0);
+	cr->move_to(0, 0);
+	cr->line_to(alloc.get_width(), 0);
+	cr->line_to(alloc.get_width(), alloc.get_height());
+	cr->line_to(0, alloc.get_height());
+	cr->fill();
+
+	cr->set_source_rgb(1, 1, 1);
+	cr->move_to(0, 0);
+	layout_->show_in_cairo_context(cr);
+
+	return true;
+}
+
 LogView::LogView() {
 	window_.add(container_);
 	window_.get_vadjustment()->signal_value_changed().connect(
@@ -35,6 +110,10 @@ void LogView::load(Gio::InputStream &is) {
 			char &ch = input_[index++];
 			if (ch == '\n' || ch == '\r') {
 				ch = '\0';
+				if (ch == '\r') {
+					index += 1;
+				}
+
 				indexes.push_back(index);
 			}
 		}
@@ -75,11 +154,12 @@ void LogView::update() {
 	}
 
 	auto adjustment = window_.get_vadjustment();
+	size_t baseLine = (ssize_t)(adjustment->get_value() / pixelsPerLine_);
 	size_t firstLine = std::max(
-			(ssize_t)(adjustment->get_value() / pixelsPerLine_) - 5,
+			(ssize_t)baseLine - 5,
 			(ssize_t)0);
 	size_t lastLine = std::min(
-			(ssize_t)(firstLine + (window_.get_height() / pixelsPerLine_) + 5),
+			(ssize_t)(baseLine + (window_.get_height() / pixelsPerLine_) + 5),
 			(ssize_t)inputLines_.size() - 1);
 
 	// Remove invisible widgets
@@ -91,7 +171,7 @@ void LogView::update() {
 		}
 	}
 
-	// Need twoo loops, because deleting invalidates iterators
+	// Need two loops, because deleting invalidates iterators
 	for (size_t key: deleteList) {
 		widgets_.erase(key);
 	}
@@ -104,16 +184,26 @@ void LogView::update() {
 
 		// This could totally be sped up by keeping a widget cache,
 		// but this actually seems more than fast enough
-		auto label = std::make_unique<Gtk::Label>(inputLines_[line]);
-		container_.put(*label, 0, line * pixelsPerLine_);
-		label->show();
-		widgets_[line] = std::move(label);
+		auto widget = makeWidget(line);
+		container_.put(*widget, 0, line * pixelsPerLine_);
+		widget->show();
+		widgets_[line] = std::move(widget);
 	}
 
+	// If we need to change the max width, just blow away everything and re-draw
+	// with the new max width. Not the fastest in the world, but this happens rarely.
 	if (container_.get_width() > maxWidth_) {
 		maxWidth_ = container_.get_width();
-		container_.set_size_request(maxWidth_, inputLines_.size() * pixelsPerLine_);
+		widgets_.clear();
+		container_.set_size_request(-1, inputLines_.size() * pixelsPerLine_);
+		update();
 	}
+}
+
+std::unique_ptr<LogLine> LogView::makeWidget(size_t line) {
+	auto widget = std::make_unique<LogLine>(inputLines_[line], maxWidth_, pixelsPerLine_);
+	widget->set_size_request(maxWidth_, pixelsPerLine_);
+	return widget;
 }
 
 void LogView::onScroll() {

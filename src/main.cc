@@ -14,7 +14,7 @@ private:
 };
 
 MainWindow::MainWindow() {
-	set_title("Basic application");
+	set_title("LogaDogg");
 	set_default_size(200, 200);
 
 	add(logView_());
