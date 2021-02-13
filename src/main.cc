@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 
+#include "PatternEditor.h"
 #include "LogView.h"
 #include "Pattern.h"
 
@@ -14,6 +15,8 @@ public:
 
 private:
 	LogView logView_{{1, 1, 1}, {0, 0, 0}};
+	PatternEditor patternEditor_;
+	Gtk::Box mainBox_{Gtk::ORIENTATION_HORIZONTAL};
 };
 
 MainWindow::MainWindow() {
@@ -26,12 +29,17 @@ MainWindow::MainWindow() {
 	patterns.back()->compile();
 	logView_.setPatterns(std::move(patterns));
 
-	add(logView_());
+	logView_().set_hexpand(true);
+	mainBox_.add(logView_());
+
+	patternEditor_().set_size_request(200, -1);
+	mainBox_.add(patternEditor_());
 
 	auto stdinput = Gio::UnixInputStream::create(0, false);
 	load(*stdinput.get());
 	stdinput.reset();
 
+	add(mainBox_);
 	show_all_children();
 }
 
