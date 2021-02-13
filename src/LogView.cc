@@ -4,9 +4,9 @@
 
 #include "log.h"
 
-LogLine::LogLine(const char *text, int width, int height):
+LogLine::LogLine(const char *text, int width, int height, Color bg, Color fg):
 		Glib::ObjectBase("LogLine"), Gtk::Widget(),
-		text_(text), width_(width), height_(height) {
+		text_(text), width_(width), height_(height), bg_(bg), fg_(fg) {
 	set_has_window(true);
 	set_name("log-line");
 
@@ -65,21 +65,21 @@ void LogLine::on_realize() {
 
 bool LogLine::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
 	const Gtk::Allocation alloc = get_allocation();
-	cr->set_source_rgb(1, 0, 0);
+	cr->set_source_rgb(bg_.r, bg_.g, bg_.b);
 	cr->move_to(0, 0);
 	cr->line_to(alloc.get_width(), 0);
 	cr->line_to(alloc.get_width(), alloc.get_height());
 	cr->line_to(0, alloc.get_height());
 	cr->fill();
 
-	cr->set_source_rgb(1, 1, 1);
+	cr->set_source_rgb(fg_.r, fg_.g, fg_.b);
 	cr->move_to(0, 0);
 	layout_->show_in_cairo_context(cr);
 
 	return true;
 }
 
-LogView::LogView() {
+LogView::LogView(Color bg, Color fg): bg_(bg), fg_(fg) {
 	window_.add(container_);
 	window_.get_vadjustment()->signal_value_changed().connect(
 			sigc::mem_fun(this, &LogView::onScroll));
@@ -137,6 +137,19 @@ void LogView::load(Gio::InputStream &is) {
 		return;
 	}
 
+	update();
+}
+
+void LogView::setColors(Color bg, Color fg) {
+	bg_ = bg;
+	fg_ = fg;
+	widgets_.clear();
+	update();
+}
+
+void LogView::setPatterns(std::vector<std::shared_ptr<Pattern>> patterns) {
+	patterns_ = std::move(patterns);
+	widgets_.clear();
 	update();
 }
 
@@ -201,7 +214,18 @@ void LogView::update() {
 }
 
 std::unique_ptr<LogLine> LogView::makeWidget(size_t line) {
-	auto widget = std::make_unique<LogLine>(inputLines_[line], maxWidth_, pixelsPerLine_);
+	const char *text = inputLines_[line];
+	Color bg = bg_, fg = fg_;
+	for (auto &pattern: patterns_) {
+		if (pattern->matches(text)) {
+			bg = pattern->bg_;
+			fg = pattern->fg_;
+			break;
+		}
+	}
+
+	auto widget = std::make_unique<LogLine>(
+			text, maxWidth_, pixelsPerLine_, bg, fg);
 	widget->set_size_request(maxWidth_, pixelsPerLine_);
 	return widget;
 }

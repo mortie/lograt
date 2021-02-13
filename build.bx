@@ -2,3 +2,4 @@ pkgs := gtkmm-3.0
 cxxflags := -g
 std := c++17
 warnings := all extra no-unused-parameter pedantic
+ldlibs := pcre2-8
