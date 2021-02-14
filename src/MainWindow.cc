@@ -29,6 +29,18 @@ MainWindow::MainWindow() {
 			sigc::mem_fun(this, &MainWindow::onPatternsUpdated));
 }
 
+void MainWindow::load(Gio::InputStream &stream) {
+	try {
+		logView_.load(stream);
+	} catch (Gio::Error &err) {
+		logln(err.what());
+		Gtk::MessageDialog dialog("Open file failed", false, Gtk::MESSAGE_ERROR);
+		dialog.set_secondary_text(err.what());
+		dialog.error_bell();
+		dialog.run();
+	}
+}
+
 void MainWindow::onNewPatterns(std::vector<std::shared_ptr<Pattern>> patterns) {
 	logView_.setPatterns(std::move(patterns));
 }
@@ -44,6 +56,6 @@ void MainWindow::onOpenButton() {
 	if (res == Gtk::RESPONSE_ACCEPT) {
 		auto file = chooser->get_file();
 		auto stream = file->read();
-		load(*(stream.get()));
+		load(*stream.get());
 	}
 }

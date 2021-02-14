@@ -11,7 +11,7 @@ class MainWindow: public Gtk::Window {
 public:
 	MainWindow();
 
-	void load(Gio::InputStream &stream) { logView_.load(stream); }
+	void load(Gio::InputStream &stream);
 
 private:
 	void onNewPatterns(std::vector<std::shared_ptr<Pattern>> patterns);
