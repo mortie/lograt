@@ -12,6 +12,7 @@ LogLine::LogLine(const char *text, int width, int height, Gdk::RGBA bg, Gdk::RGB
 
 	Pango::FontDescription font;
 	font.set_family("Monospace");
+	font.set_size((height / 2) * Pango::SCALE);
 	layout_ = create_pango_layout(text_);
 	layout_->set_font_description(font);
 }
