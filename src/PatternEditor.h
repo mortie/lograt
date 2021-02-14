@@ -16,6 +16,7 @@ public:
 private:
 	struct PatternBox {
 		PatternBox(const char *rx, Gdk::RGBA bg, Gdk::RGBA fg);
+		Gtk::Widget &operator()() { return frame; }
 
 		std::shared_ptr<Pattern> pattern;
 		Gtk::Frame frame;
@@ -25,11 +26,19 @@ private:
 		Gtk::Box colorBox{Gtk::ORIENTATION_HORIZONTAL};
 		Gtk::ColorButton background;
 		Gtk::ColorButton foreground;
+
+		Gtk::Box actionBox{Gtk::ORIENTATION_HORIZONTAL};
+		Gtk::Button deleteButton{"X"};
+		Gtk::Button upButton{"ᐃ"};
+		Gtk::Button downButton{"ᐁ"};
 	};
 
 	std::unique_ptr<PatternBox> makePatternBox(
 			const char *rx, Gdk::RGBA bg, Gdk::RGBA fg);
 	void resetNewPattern();
+	void emitCurrentPatterns();
+	void deletePattern(PatternBox *box);
+	void movePattern(PatternBox *box, int direction);
 
 	void onPatternSubmit();
 	void onPatternChanged(PatternBox *box);
@@ -42,10 +51,12 @@ private:
 	Gtk::Box newPatternBox_{Gtk::ORIENTATION_VERTICAL};
 	Gtk::Entry newPatternRx_;
 	Gtk::Box newPatternColorBox_{Gtk::ORIENTATION_HORIZONTAL};
-	Gtk::ColorButton newPatternBackground_{Gdk::RGBA{"rgba(255, 255, 255, 1)"}};
-	Gtk::ColorButton newPatternForeground_{Gdk::RGBA{"rgba(0, 0, 0, 1)"}};
+	Gtk::ColorButton newPatternBackground_{};
+	Gtk::ColorButton newPatternForeground_{};
 	Gtk::Button newPatternAdd_{"Add"};
 
 	sigc::signal<void(std::vector<std::shared_ptr<Pattern>>)> signalNewPatterns_;
 	sigc::signal<void()> signalPatternsUpdated_;
+
+	int colorIndex_ = 0;
 };
