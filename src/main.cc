@@ -6,6 +6,7 @@
 #include "PatternEditor.h"
 #include "LogView.h"
 #include "Pattern.h"
+#include "log.h"
 
 class MainWindow: public Gtk::Window {
 public:
@@ -14,7 +15,10 @@ public:
 	void load(Gio::InputStream &stream) { logView_.load(stream); }
 
 private:
-	LogView logView_{{1, 1, 1}, {0, 0, 0}};
+	void onNewPatterns(std::vector<std::shared_ptr<Pattern>> patterns);
+	void onPatternsUpdated();
+
+	LogView logView_{Gdk::RGBA{"rgba(255, 255, 255, 1)"}, Gdk::RGBA{"rgba(0, 0, 0, 1)"}};
 	PatternEditor patternEditor_;
 	Gtk::Box mainBox_{Gtk::ORIENTATION_HORIZONTAL};
 };
@@ -22,12 +26,6 @@ private:
 MainWindow::MainWindow() {
 	set_title("LogaDogg");
 	set_default_size(200, 200);
-
-	std::vector<std::shared_ptr<Pattern>> patterns;
-	patterns.push_back(std::make_shared<Pattern>(
-			"feature", Color{0.5, 0.5, 0.5}, Color{1, 1, 1}));
-	patterns.back()->compile();
-	logView_.setPatterns(std::move(patterns));
 
 	logView_().set_hexpand(true);
 	mainBox_.add(logView_());
@@ -41,6 +39,19 @@ MainWindow::MainWindow() {
 
 	add(mainBox_);
 	show_all_children();
+
+	patternEditor_.signalNewPatterns().connect(
+			sigc::mem_fun(this, &MainWindow::onNewPatterns));
+	patternEditor_.signalPatternsUpdated().connect(
+			sigc::mem_fun(this, &MainWindow::onPatternsUpdated));
+}
+
+void MainWindow::onNewPatterns(std::vector<std::shared_ptr<Pattern>> patterns) {
+	logView_.setPatterns(std::move(patterns));
+}
+
+void MainWindow::onPatternsUpdated() {
+	logView_.patternsUpdated();
 }
 
 int main(int argc, char* argv[])
@@ -48,7 +59,7 @@ int main(int argc, char* argv[])
 	auto app = Gtk::Application::create("coffee.mort.logadogg");
 
 	MainWindow window;
-	window.set_default_size(640, 480);
+	window.set_default_size(1000, 600);
 
 	return app->run(window);
 }

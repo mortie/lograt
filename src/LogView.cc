@@ -4,7 +4,7 @@
 
 #include "log.h"
 
-LogLine::LogLine(const char *text, int width, int height, Color bg, Color fg):
+LogLine::LogLine(const char *text, int width, int height, Gdk::RGBA bg, Gdk::RGBA fg):
 		Glib::ObjectBase("LogLine"), Gtk::Widget(),
 		text_(text), width_(width), height_(height), bg_(bg), fg_(fg) {
 	set_has_window(true);
@@ -65,21 +65,21 @@ void LogLine::on_realize() {
 
 bool LogLine::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
 	const Gtk::Allocation alloc = get_allocation();
-	cr->set_source_rgb(bg_.r, bg_.g, bg_.b);
+	cr->set_source_rgb(bg_.get_red(), bg_.get_green(), bg_.get_blue());
 	cr->move_to(0, 0);
 	cr->line_to(alloc.get_width(), 0);
 	cr->line_to(alloc.get_width(), alloc.get_height());
 	cr->line_to(0, alloc.get_height());
 	cr->fill();
 
-	cr->set_source_rgb(fg_.r, fg_.g, fg_.b);
+	cr->set_source_rgb(fg_.get_red(), fg_.get_green(), fg_.get_blue());
 	cr->move_to(0, 0);
 	layout_->show_in_cairo_context(cr);
 
 	return true;
 }
 
-LogView::LogView(Color bg, Color fg): bg_(bg), fg_(fg) {
+LogView::LogView(Gdk::RGBA bg, Gdk::RGBA fg): bg_(bg), fg_(fg) {
 	window_.add(container_);
 	window_.get_vadjustment()->signal_value_changed().connect(
 			sigc::mem_fun(this, &LogView::onScroll));
@@ -125,7 +125,10 @@ void LogView::load(Gio::InputStream &is) {
 	}
 
 	gint64 duration = g_get_monotonic_time() - startTime;
-	logln("Loaded " << indexes.back() << " lines in " << (duration / 1000) << "ms.");
+	logln(
+			"Loaded " << indexes.back() << " lines "
+			<< "(" << input_.size() / 1000000.0 << "mb) in "
+			<< (duration / 1000) << "ms.");
 
 	inputLines_.reserve(indexes.size());
 	for (size_t index: indexes) {
@@ -140,7 +143,7 @@ void LogView::load(Gio::InputStream &is) {
 	update();
 }
 
-void LogView::setColors(Color bg, Color fg) {
+void LogView::setColors(Gdk::RGBA bg, Gdk::RGBA fg) {
 	bg_ = bg;
 	fg_ = fg;
 	widgets_.clear();
@@ -149,6 +152,11 @@ void LogView::setColors(Color bg, Color fg) {
 
 void LogView::setPatterns(std::vector<std::shared_ptr<Pattern>> patterns) {
 	patterns_ = std::move(patterns);
+	widgets_.clear();
+	update();
+}
+
+void LogView::patternsUpdated() {
 	widgets_.clear();
 	update();
 }
@@ -215,7 +223,7 @@ void LogView::update() {
 
 std::unique_ptr<LogLine> LogView::makeWidget(size_t line) {
 	const char *text = inputLines_[line];
-	Color bg = bg_, fg = fg_;
+	Gdk::RGBA bg = bg_, fg = fg_;
 	for (auto &pattern: patterns_) {
 		if (pattern->matches(text)) {
 			bg = pattern->bg_;
