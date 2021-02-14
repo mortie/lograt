@@ -17,7 +17,12 @@ private:
 	void onNewPatterns(std::vector<std::shared_ptr<Pattern>> patterns);
 	void onPatternsUpdated();
 
+	void onOpenButton();
+
 	LogView logView_{Gdk::RGBA{"rgba(255, 255, 255, 1)"}, Gdk::RGBA{"rgba(0, 0, 0, 1)"}};
 	PatternEditor patternEditor_;
 	Gtk::Box mainBox_{Gtk::ORIENTATION_HORIZONTAL};
+
+	Gtk::HeaderBar headerBar_;
+	Gtk::Button openButton_{"Open"};
 };

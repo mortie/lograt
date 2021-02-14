@@ -167,6 +167,7 @@ void LogView::reset() {
 	input_.shrink_to_fit();
 	inputLines_.clear();
 	inputLines_.shrink_to_fit();
+	maxWidth_ = 0;
 }
 
 void LogView::update() {
