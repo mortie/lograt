@@ -15,10 +15,10 @@ MainWindow::MainWindow() {
 	set_titlebar(headerBar_);
 
 	logView_().set_hexpand(true);
-	mainBox_.add(logView_());
+	mainBox_.pack1(logView_(), true, false);
 
 	patternEditor_().set_size_request(200, -1);
-	mainBox_.add(patternEditor_());
+	mainBox_.pack2(patternEditor_(), false, false);
 
 	add(mainBox_);
 	show_all_children();
