@@ -73,8 +73,11 @@ bool LogLine::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
 	cr->line_to(0, alloc.get_height());
 	cr->fill();
 
+	double textHeight = layout_->get_logical_extents().get_height() / (double)Pango::SCALE;
+	double offset = (height_ - textHeight) / 2.0;
+
 	cr->set_source_rgb(fg_.get_red(), fg_.get_green(), fg_.get_blue());
-	cr->move_to(0, 0);
+	cr->move_to(0, offset);
 	layout_->show_in_cairo_context(cr);
 
 	return true;
