@@ -36,7 +36,7 @@ std::string Pattern::compile() {
 	int errnum;
 	size_t erroffset;
 	code_ = pcre2_compile(
-			(PCRE2_SPTR)rx_.c_str(), PCRE2_ZERO_TERMINATED, 0,
+			(PCRE2_SPTR)rx_.c_str(), PCRE2_ZERO_TERMINATED, PCRE2_CASELESS,
 			&errnum, &erroffset, NULL);
 	if (code_ == nullptr) {
 		char buffer[512];
