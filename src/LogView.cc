@@ -200,6 +200,7 @@ void LogView::update() {
 	}
 
 	// Load visible widgets
+	int width = 0;
 	for (size_t line = firstLine; line <= lastLine; ++line) {
 		if (widgets_.find(line) != widgets_.end()) {
 			continue;
@@ -210,16 +211,25 @@ void LogView::update() {
 		auto widget = makeWidget(line);
 		container_.put(*widget, 0, line * pixelsPerLine_);
 		widget->show();
+
+		int min, nat;
+		widget->get_preferred_width(min, nat);
+		if (nat > width) {
+			width = nat;
+		}
+
 		widgets_[line] = std::move(widget);
 	}
 
 	// If we need to change the max width, just blow away everything and re-draw
 	// with the new max width. Not the fastest in the world, but this happens rarely.
-	if (container_.get_width() > maxWidth_) {
-		maxWidth_ = container_.get_width();
-		widgets_.clear();
+	if (width > maxWidth_) {
+		maxWidth_ = width;
 		container_.set_size_request(-1, inputLines_.size() * pixelsPerLine_);
-		update();
+
+		for (auto &[key, widget]: widgets_) {
+			widget->set_size_request(maxWidth_, pixelsPerLine_);
+		}
 	}
 }
 
