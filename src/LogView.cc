@@ -118,10 +118,10 @@ void LogView::load(Gio::InputStream &is) {
 		while (index < end) {
 			char &ch = input_[index++];
 			if (ch == '\n' || ch == '\r') {
-				ch = '\0';
 				if (ch == '\r') {
 					index += 1;
 				}
+				ch = '\0';
 
 				indexes.push_back(index);
 			}
