@@ -1,6 +1,4 @@
-# Lograt
-
-![Logo](https://raw.githubusercontent.com/mortie/lograt/main/icons/lograt.svg)
+# <img src="https://raw.githubusercontent.com/mortie/lograt/main/icons/lograt.svg" height="30"> Lograt
 
 Lograt is a program to view log files.
 
