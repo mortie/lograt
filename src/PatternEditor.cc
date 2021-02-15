@@ -1,5 +1,7 @@
 #include "PatternEditor.h"
 
+#include <gdkmm.h>
+
 #include "log.h"
 
 static const char *bgColors[] = {
@@ -41,6 +43,7 @@ PatternEditor::PatternEditor() {
 	newPatternForeground_.set_rgba(makeColor(fgColor));
 
 	newPatternRx_.set_placeholder_text("Pattern RegEx");
+	newPatternRx_.set_icon_from_icon_name("search", Gtk::ENTRY_ICON_SECONDARY);
 	newPatternBox_.add(newPatternRx_);
 	newPatternBox_.add(newPatternColorBox_);
 	newPatternBox_.add(newPatternAdd_);
@@ -56,8 +59,12 @@ PatternEditor::PatternEditor() {
 
 	newPatternRx_.signal_activate().connect(
 			sigc::mem_fun(this, &PatternEditor::onPatternSubmit));
+	newPatternRx_.signal_icon_press().connect(
+			sigc::mem_fun(this, &PatternEditor::onSearchClicked));
 	newPatternAdd_.signal_clicked().connect(
 			sigc::mem_fun(this, &PatternEditor::onPatternSubmit));
+	newPatternRx_.signal_key_press_event().connect(
+			sigc::mem_fun(this, &PatternEditor::onRxKeyPress));
 }
 
 PatternEditor::PatternBox::PatternBox(const char *rx, Gdk::RGBA bg, Gdk::RGBA fg):
@@ -195,6 +202,10 @@ void PatternEditor::movePattern(PatternBox *fromBox, int direction) {
 	emitCurrentPatterns();
 }
 
+void PatternEditor::emitSearch(const char *rx) {
+	logln("search " << rx);
+}
+
 void PatternEditor::onPatternSubmit() {
 	Glib::ustring rx = newPatternRx_.get_text();
 	if (rx.size() == 0) {
@@ -229,4 +240,19 @@ void PatternEditor::onPatternChanged(PatternBox *box) {
 
 	*box->pattern = std::move(pat);
 	signalPatternsUpdated_.emit();
+}
+
+void PatternEditor::onSearchClicked(Gtk::EntryIconPosition pos, const GdkEventButton *evt) {
+	if (evt->button == 1) {
+		emitSearch(newPatternRx_.get_text().c_str());
+	}
+}
+
+bool PatternEditor::onRxKeyPress(const GdkEventKey *evt) {
+	if (evt->keyval == GDK_KEY_Return && evt->state & GDK_CONTROL_MASK) {
+		emitSearch(newPatternRx_.get_text().c_str());
+		return true;
+	}
+
+	return false;
 }

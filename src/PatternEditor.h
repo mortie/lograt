@@ -1,6 +1,8 @@
-#include <gtkmm.h>
+#pragma once
+
 #include <vector>
 #include <memory>
+#include <gtkmm.h>
 #include <glibmm/signalproxy.h>
 
 #include "Pattern.h"
@@ -12,6 +14,7 @@ public:
 
 	auto &signalNewPatterns() { return signalNewPatterns_; }
 	auto &signalPatternsUpdated() { return signalPatternsUpdated_; }
+	auto &signalSearch() { return signalSearch_; }
 
 private:
 	struct PatternBox {
@@ -39,9 +42,12 @@ private:
 	void emitCurrentPatterns();
 	void deletePattern(PatternBox *box);
 	void movePattern(PatternBox *box, int direction);
+	void emitSearch(const char *rx);
 
 	void onPatternSubmit();
 	void onPatternChanged(PatternBox *box);
+	void onSearchClicked(Gtk::EntryIconPosition pos, const GdkEventButton *evt);
+	bool onRxKeyPress(const GdkEventKey *evt);
 
 	std::vector<std::unique_ptr<PatternBox>> patterns_;
 	Gtk::ScrolledWindow window_;
@@ -57,6 +63,7 @@ private:
 
 	sigc::signal<void(std::vector<std::shared_ptr<Pattern>>)> signalNewPatterns_;
 	sigc::signal<void()> signalPatternsUpdated_;
+	sigc::signal<void(Pattern)> signalSearch_;
 
 	int colorIndex_ = 0;
 };
