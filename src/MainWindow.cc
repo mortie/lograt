@@ -3,13 +3,13 @@
 #include "log.h"
 
 MainWindow::MainWindow() {
-	set_title("LogaDogg");
+	set_title("Lograt");
 	set_default_size(200, 200);
 
 	openButton_.signal_clicked().connect(
 			sigc::mem_fun(this, &MainWindow::onOpenButton));
 
-	headerBar_.set_title("LogaDogg");
+	headerBar_.set_title("Lograt");
 	headerBar_.set_show_close_button(true);
 	headerBar_.add(openButton_);
 	set_titlebar(headerBar_);

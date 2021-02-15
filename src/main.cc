@@ -9,9 +9,10 @@
 
 int main(int argc, char* argv[])
 {
-	auto app = Gtk::Application::create("coffee.mort.logadogg");
+	auto app = Gtk::Application::create("coffee.mort.lograt");
 
 	MainWindow window;
+	window.set_default_icon_name("lograt");
 	window.set_default_size(1000, 600);
 
 	if (argc == 2) {
