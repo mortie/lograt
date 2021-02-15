@@ -15,6 +15,7 @@ public:
 	auto &signalNewPatterns() { return signalNewPatterns_; }
 	auto &signalPatternsUpdated() { return signalPatternsUpdated_; }
 	auto &signalSearch() { return signalSearch_; }
+	auto &signalUnsearch() { return signalUnsearch_; }
 
 private:
 	struct PatternBox {
@@ -63,7 +64,8 @@ private:
 
 	sigc::signal<void(std::vector<std::shared_ptr<Pattern>>)> signalNewPatterns_;
 	sigc::signal<void()> signalPatternsUpdated_;
-	sigc::signal<void(Pattern)> signalSearch_;
+	sigc::signal<void(std::shared_ptr<Pattern>)> signalSearch_;
+	sigc::signal<void()> signalUnsearch_;
 
 	int colorIndex_ = 0;
 };

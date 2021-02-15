@@ -27,6 +27,10 @@ MainWindow::MainWindow() {
 			sigc::mem_fun(this, &MainWindow::onNewPatterns));
 	patternEditor_.signalPatternsUpdated().connect(
 			sigc::mem_fun(this, &MainWindow::onPatternsUpdated));
+	patternEditor_.signalSearch().connect(
+			sigc::mem_fun(this, &MainWindow::onSearch));
+	patternEditor_.signalUnsearch().connect(
+			sigc::mem_fun(this, &MainWindow::onUnsearch));
 }
 
 void MainWindow::load(Gio::InputStream &stream) {
@@ -47,6 +51,14 @@ void MainWindow::onNewPatterns(std::vector<std::shared_ptr<Pattern>> patterns) {
 
 void MainWindow::onPatternsUpdated() {
 	logView_.patternsUpdated();
+}
+
+void MainWindow::onSearch(std::shared_ptr<Pattern> pattern) {
+	logView_.search(std::move(pattern));
+}
+
+void MainWindow::onUnsearch() {
+	logView_.unsearch();
 }
 
 void MainWindow::onOpenButton() {

@@ -16,6 +16,8 @@ public:
 private:
 	void onNewPatterns(std::vector<std::shared_ptr<Pattern>> patterns);
 	void onPatternsUpdated();
+	void onSearch(std::shared_ptr<Pattern> pattern);
+	void onUnsearch();
 
 	void onOpenButton();
 

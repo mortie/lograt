@@ -23,6 +23,7 @@ static const char *bgColors[] = {
 	"#ff8df0",
 };
 
+static const char *searchBgColor = "#4aaaff";
 static const char *fgColor = "#000000";
 
 static Gdk::RGBA makeColor(const char *str) {
@@ -203,7 +204,23 @@ void PatternEditor::movePattern(PatternBox *fromBox, int direction) {
 }
 
 void PatternEditor::emitSearch(const char *rx) {
-	logln("search " << rx);
+	if (rx[0] == '\0') {
+		signalUnsearch_.emit();
+		return;
+	}
+
+	auto pattern = std::make_shared<Pattern>(
+			rx, makeColor(searchBgColor), makeColor(fgColor));
+	std::string error = pattern->compile();
+	if (error.size() > 0) {
+		Gtk::MessageDialog dialog("Search regex error", false, Gtk::MESSAGE_ERROR);
+		dialog.set_secondary_text(error);
+		dialog.error_bell();
+		dialog.run();
+		return;
+	}
+
+	signalSearch_.emit(std::move(pattern));
 }
 
 void PatternEditor::onPatternSubmit() {

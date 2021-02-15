@@ -11,7 +11,7 @@
 
 class LogLine: public Gtk::Widget {
 public:
-	LogLine(const char *text, int width, int height, Gdk::RGBA bg, Gdk::RGBA fg);
+	LogLine(const char *text, int height, Gdk::RGBA bg, Gdk::RGBA fg);
 
 protected:
 	void get_preferred_width_vfunc(int &min, int &nat) const final override;
@@ -24,7 +24,7 @@ protected:
 
 private:
 	const char *text_;
-	int width_, height_;
+	int height_;
 	Gdk::RGBA bg_, fg_;
 	Glib::RefPtr<Pango::Layout> layout_;
 };
@@ -32,14 +32,21 @@ private:
 class LogView {
 public:
 	LogView(Gdk::RGBA bg, Gdk::RGBA fg);
-	Gtk::Widget &operator()() { return window_; }
+	Gtk::Widget &operator()() { return paned_; }
 
 	void load(Gio::InputStream &is);
 	void setColors(Gdk::RGBA bg, Gdk::RGBA fg);
 	void setPatterns(std::vector<std::shared_ptr<Pattern>> patterns);
 	void patternsUpdated();
+	void search(std::shared_ptr<Pattern> pattern);
+	void unsearch();
 
 private:
+	struct SearchResult {
+		LogLine widget;
+		size_t lineNum;
+	};
+
 	void reset();
 	void update();
 
@@ -48,13 +55,20 @@ private:
 	void onScroll();
 	void onResize(Gdk::Rectangle &rect);
 
+	Gtk::Paned paned_{Gtk::ORIENTATION_VERTICAL};
+
 	int pixelsPerLine_ = 20;
 	int maxWidth_ = 0;
 	Gdk::RGBA bg_, fg_;
+	std::shared_ptr<Pattern> searchPattern_;
 	std::vector<std::shared_ptr<Pattern>> patterns_;
 
 	Gtk::ScrolledWindow window_;
 	Gtk::Fixed container_;
+
+	std::vector<SearchResult> searchResults_;
+	Gtk::ScrolledWindow searchWindow_;
+	Gtk::Fixed searchContainer_;
 
 	std::unordered_map<size_t, std::unique_ptr<LogLine>> widgets_;
 
