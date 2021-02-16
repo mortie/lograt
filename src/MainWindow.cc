@@ -64,7 +64,12 @@ void MainWindow::onUnsearch() {
 void MainWindow::onOpenButton() {
 	auto chooser = Gtk::FileChooserNative::create(
 			"Open Log File", Gtk::FILE_CHOOSER_ACTION_OPEN);
+	if (prevOpenDirUri_.size() > 0) {
+		chooser->set_current_folder_uri(prevOpenDirUri_);
+	}
+
 	auto res = chooser->run();
+	prevOpenDirUri_ = chooser->get_current_folder_uri();
 	if (res == Gtk::RESPONSE_ACCEPT) {
 		auto file = chooser->get_file();
 		auto stream = file->read();

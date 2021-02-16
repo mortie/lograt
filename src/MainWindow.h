@@ -2,6 +2,7 @@
 
 #include <gtkmm.h>
 #include <vector>
+#include <string>
 
 #include "PatternEditor.h"
 #include "LogView.h"
@@ -27,4 +28,6 @@ private:
 
 	Gtk::HeaderBar headerBar_;
 	Gtk::Button openButton_{"Open"};
+
+	std::string prevOpenDirUri_;
 };
