@@ -18,11 +18,11 @@ LogLine::LogLine(const char *text, int height, Gdk::RGBA bg, Gdk::RGBA fg):
 }
 
 void LogLine::get_preferred_width_vfunc(int &min, int &nat) const {
-	min = nat = layout_->get_logical_extents().get_width() / Pango::SCALE;
+	min = nat = layout_->get_logical_extents().get_width() / Pango::SCALE + HPADDING * 2;
 }
 
 void LogLine::get_preferred_width_for_height_vfunc(int h, int &min, int &nat) const {
-	min = nat = layout_->get_logical_extents().get_width() / Pango::SCALE;
+	min = nat = layout_->get_logical_extents().get_width() / Pango::SCALE + HPADDING * 2;
 }
 
 void LogLine::get_preferred_height_vfunc(int &min, int &nat) const {
@@ -77,7 +77,7 @@ bool LogLine::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
 	double offset = (height_ - textHeight) / 2.0;
 
 	cr->set_source_rgb(fg_.get_red(), fg_.get_green(), fg_.get_blue());
-	cr->move_to(0, offset);
+	cr->move_to(HPADDING, offset);
 	layout_->show_in_cairo_context(cr);
 
 	return true;

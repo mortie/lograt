@@ -23,6 +23,7 @@ protected:
 	bool on_draw(const Cairo::RefPtr<Cairo::Context> &cr) final override;
 
 private:
+	static constexpr int HPADDING = 4;
 	const char *text_;
 	int height_;
 	Gdk::RGBA bg_, fg_;
