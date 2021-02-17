@@ -39,6 +39,8 @@ maybe Glogg is.
 * Refactor the log viewer (LogViewer.cc).
 * Keep some state across launches.
 * Support multiple logs at once using tabs.
+* Add a "minimap" type thing, to show at a glance which sections of the file
+  matches which pattern.
 
 ## Attribution
 
