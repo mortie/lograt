@@ -13,6 +13,8 @@ class LogLine: public Gtk::Widget {
 public:
 	LogLine(const char *text, int height, Gdk::RGBA bg, Gdk::RGBA fg);
 
+	void setHighlighted(bool hl);
+
 protected:
 	void get_preferred_width_vfunc(int &min, int &nat) const final override;
 	void get_preferred_width_for_height_vfunc(int h, int &min, int &nat) const final override;
@@ -27,6 +29,7 @@ private:
 	const char *text_;
 	int height_;
 	Gdk::RGBA bg_, fg_;
+	bool isHighlighted_ = false;
 	Glib::RefPtr<Pango::Layout> layout_;
 };
 
@@ -60,6 +63,8 @@ private:
 
 	int pixelsPerLine_ = 20;
 	int maxWidth_ = 0;
+	ssize_t highlightedLine_ = -1;
+	ssize_t highlightedSearchResult_ = -1;
 	Gdk::RGBA bg_, fg_;
 	std::shared_ptr<Pattern> searchPattern_;
 	std::vector<std::shared_ptr<Pattern>> patterns_;

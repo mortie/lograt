@@ -2,6 +2,7 @@
 
 #include <glibmm.h>
 
+#include "colors.h"
 #include "log.h"
 
 LogLine::LogLine(const char *text, int height, Gdk::RGBA bg, Gdk::RGBA fg):
@@ -15,6 +16,13 @@ LogLine::LogLine(const char *text, int height, Gdk::RGBA bg, Gdk::RGBA fg):
 	font.set_size((height / 2) * Pango::SCALE);
 	layout_ = create_pango_layout(text_);
 	layout_->set_font_description(font);
+}
+
+void LogLine::setHighlighted(bool hl) {
+	if (hl != isHighlighted_) {
+		isHighlighted_ = hl;
+		queue_draw();
+	}
 }
 
 void LogLine::get_preferred_width_vfunc(int &min, int &nat) const {
@@ -65,8 +73,11 @@ void LogLine::on_realize() {
 }
 
 bool LogLine::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
+	Gdk::RGBA bg = isHighlighted_ ? highlightBgColor : bg_;
+	Gdk::RGBA fg = isHighlighted_ ? textFgColor : fg_;
+
 	const Gtk::Allocation alloc = get_allocation();
-	cr->set_source_rgb(bg_.get_red(), bg_.get_green(), bg_.get_blue());
+	cr->set_source_rgb(bg.get_red(), bg.get_green(), bg.get_blue());
 	cr->move_to(0, 0);
 	cr->line_to(alloc.get_width(), 0);
 	cr->line_to(alloc.get_width(), alloc.get_height());
@@ -76,7 +87,7 @@ bool LogLine::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
 	double textHeight = layout_->get_logical_extents().get_height() / (double)Pango::SCALE;
 	double offset = (height_ - textHeight) / 2.0;
 
-	cr->set_source_rgb(fg_.get_red(), fg_.get_green(), fg_.get_blue());
+	cr->set_source_rgb(fg.get_red(), fg.get_green(), fg.get_blue());
 	cr->move_to(HPADDING, offset);
 	layout_->show_in_cairo_context(cr);
 
@@ -205,20 +216,43 @@ void LogView::search(std::shared_ptr<Pattern> pattern) {
 			width = nat;
 		}
 
+		count += 1;
+	}
+
+	for (size_t i = 0; i < searchResults_.size(); ++i) {
+		auto &result = searchResults_[i];
+		result.widget.set_size_request(width);
 		result.widget.set_events(result.widget.get_events() | Gdk::BUTTON_PRESS_MASK);
-		result.widget.signal_button_press_event().connect([this, line = result.lineNum](const GdkEventButton *evt) {
-			if (evt->button == 1 && evt->type == GDK_2BUTTON_PRESS) {
-				size_t dest = std::max((ssize_t)line - 3, (ssize_t)0);
+		result.widget.signal_button_press_event().connect([this, i](const GdkEventButton *evt) {
+			if (evt->button == 1 && evt->type == GDK_BUTTON_PRESS) {
+				auto &result = searchResults_[i];
+				size_t dest = std::max((ssize_t)result.lineNum - 3, (ssize_t)0);
 				window_.get_vadjustment()->set_value(dest * pixelsPerLine_);
+
+				if (highlightedLine_ >= 0) {
+					auto it = widgets_.find(highlightedLine_);
+					if (it != widgets_.end()) {
+						it->second->setHighlighted(false);
+					}
+				}
+
+				highlightedLine_ = result.lineNum - 1;
+				auto it = widgets_.find(highlightedLine_);
+				if (it != widgets_.end()) {
+					it->second->setHighlighted(true);
+				}
+
+				if (highlightedSearchResult_ >= 0) {
+					searchResults_[highlightedSearchResult_].widget.setHighlighted(false);
+				}
+
+				highlightedSearchResult_ = i;
+				result.widget.setHighlighted(true);
+
 				return true;
 			}
 			return false;
 		});
-		count += 1;
-	}
-
-	for (auto &result: searchResults_) {
-		result.widget.set_size_request(width);
 	}
 
 	paned_.pack2(searchWindow_, false, true);
@@ -233,6 +267,7 @@ void LogView::search(std::shared_ptr<Pattern> pattern) {
 void LogView::unsearch() {
 	searchPattern_.reset();
 	searchResults_.clear();
+	highlightedSearchResult_ = -1;
 	widgets_.clear();
 	paned_.remove(searchWindow_);
 	update();
@@ -327,6 +362,9 @@ std::unique_ptr<LogLine> LogView::makeWidget(size_t line) {
 
 	auto widget = std::make_unique<LogLine>(
 			text, pixelsPerLine_, bg, fg);
+	if (highlightedLine_ >= 0 && line == (size_t)highlightedLine_) {
+		widget->setHighlighted(true);
+	}
 	widget->set_size_request(maxWidth_, pixelsPerLine_);
 	return widget;
 }

@@ -11,7 +11,8 @@ inline Gdk::RGBA operator""_rgba(const char *str, size_t len) {
 
 inline const Gdk::RGBA textBgColor = "#ffffff"_rgba;
 inline const Gdk::RGBA textFgColor = "#000000"_rgba;
-inline const Gdk::RGBA searchBgColor = "#4aaaff"_rgba;
+inline const Gdk::RGBA searchBgColor = "#24eeff"_rgba;
+inline const Gdk::RGBA highlightBgColor = "#4aaaff"_rgba;
 
 inline const Gdk::RGBA patternBgColors[] = {
 	"#ff9c85"_rgba,
