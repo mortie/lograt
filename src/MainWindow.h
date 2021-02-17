@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 
+#include "colors.h"
 #include "PatternEditor.h"
 #include "LogView.h"
 #include "Pattern.h"
@@ -22,7 +23,7 @@ private:
 
 	void onOpenButton();
 
-	LogView logView_{Gdk::RGBA{"rgba(255, 255, 255, 1)"}, Gdk::RGBA{"rgba(0, 0, 0, 1)"}};
+	LogView logView_{textBgColor, textFgColor};
 	PatternEditor patternEditor_;
 	Gtk::Paned mainBox_{Gtk::ORIENTATION_HORIZONTAL};
 

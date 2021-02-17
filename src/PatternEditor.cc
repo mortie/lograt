@@ -2,35 +2,7 @@
 
 #include <gdkmm.h>
 
-#include "log.h"
-
-static const char *bgColors[] = {
-	"#ff9c85",
-	"#b5be00",
-	"#00ce9e",
-	"#00c6f4",
-	"#e09cff",
-	"#ff98ae",
-	"#d8b300",
-	"#00d25f",
-	"#00c9d6",
-	"#b7acff",
-	"#ff94cc",
-	"#fba300",
-	"#82c900",
-	"#00ccbd",
-	"#81b9ff",
-	"#ff8df0",
-};
-
-static const char *searchBgColor = "#4aaaff";
-static const char *fgColor = "#000000";
-
-static Gdk::RGBA makeColor(const char *str) {
-	Gdk::RGBA rgba{str};
-	rgba.set_alpha(1);
-	return rgba;
-}
+#include "colors.h"
 
 PatternEditor::PatternEditor() {
 	newPatternBackground_.set_hexpand(true);
@@ -40,8 +12,8 @@ PatternEditor::PatternEditor() {
 	newPatternColorBox_.add(newPatternBackground_);
 	newPatternColorBox_.add(newPatternForeground_);
 
-	newPatternBackground_.set_rgba(makeColor(bgColors[0]));
-	newPatternForeground_.set_rgba(makeColor(fgColor));
+	newPatternBackground_.set_rgba(patternBgColors[0]);
+	newPatternForeground_.set_rgba(textFgColor);
 
 	newPatternRx_.set_placeholder_text("Pattern RegEx");
 	newPatternRx_.set_icon_from_icon_name("search", Gtk::ENTRY_ICON_SECONDARY);
@@ -192,10 +164,8 @@ void PatternEditor::movePattern(PatternBox *fromBox, int direction) {
 
 	gint fromIdx = fromIt - patterns_.begin();
 	if (direction < 0) {
-		logln("Moving child to " << (fromIdx));
 		container_.reorder_child((*fromBox)(), fromIdx);
 	} else {
-		logln("Moving child to " << (fromIdx + 2));
 		container_.reorder_child((*fromBox)(), fromIdx + 2);
 	}
 
@@ -210,7 +180,7 @@ void PatternEditor::emitSearch(const char *rx) {
 	}
 
 	auto pattern = std::make_shared<Pattern>(
-			rx, makeColor(searchBgColor), makeColor(fgColor));
+			rx, searchBgColor, textFgColor);
 	std::string error = pattern->compile();
 	if (error.size() > 0) {
 		Gtk::MessageDialog dialog("Search regex error", false, Gtk::MESSAGE_ERROR);
@@ -236,8 +206,8 @@ void PatternEditor::onPatternSubmit() {
 
 	emitCurrentPatterns();
 
-	colorIndex_ = (colorIndex_ + 1) % (sizeof(bgColors) / sizeof(*bgColors));
-	newPatternBackground_.set_rgba(makeColor(bgColors[colorIndex_]));
+	colorIndex_ = (colorIndex_ + 1) % patternBgColorsLen;
+	newPatternBackground_.set_rgba(patternBgColors[colorIndex_]);
 
 	resetNewPattern();
 }
