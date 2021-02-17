@@ -344,6 +344,19 @@ void LogView::update() {
 			widget->set_size_request(maxWidth_, pixelsPerLine_);
 		}
 	}
+
+	// This is kind of ugly, but meh
+	if (maxWidth_ < window_.get_width()) {
+		int w = window_.get_width();
+
+		for (auto &[key, widget]: widgets_) {
+			widget->set_size_request(w, pixelsPerLine_);
+		}
+
+		for (auto &result: searchResults_) {
+			result.widget.set_size_request(w, pixelsPerLine_);
+		}
+	}
 }
 
 std::unique_ptr<LogLine> LogView::makeWidget(size_t line) {
