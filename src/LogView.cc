@@ -268,12 +268,14 @@ void LogView::unsearch() {
 	searchPattern_.reset();
 	searchResults_.clear();
 	highlightedSearchResult_ = -1;
+	highlightedLine_ = -1;
 	widgets_.clear();
 	paned_.remove(searchWindow_);
 	update();
 }
 
 void LogView::reset() {
+	unsearch();
 	widgets_.clear();
 	input_.clear();
 	input_.shrink_to_fit();
