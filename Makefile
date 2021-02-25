@@ -1,5 +1,7 @@
 BUILD := build
 
+PKG_CONFIG ?= pkg-config
+
 DESTDIR ?=
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
@@ -11,9 +13,9 @@ OBJS := $(patsubst %,$(BUILD)/%.o,$(SRCS))
 
 PKGS := gtkmm-3.0
 FLAGS := -Wall -Wextra -Wno-unused-parameter -Wpedantic -g -std=c++17 \
-	$(shell pkg-config --cflags $(PKGS))
+	$(shell $(PKG_CONFIG) --cflags $(PKGS))
 LDLIBS := -lpcre2-8 \
-	$(shell pkg-config --libs $(PKGS))
+	$(shell $(PKG_CONFIG) --libs $(PKGS))
 
 $(BUILD)/lograt: $(OBJS)
 	@mkdir -p $(@D)
