@@ -107,21 +107,28 @@ LogView::LogView(Gdk::RGBA bg, Gdk::RGBA fg): bg_(bg), fg_(fg) {
 	paned_.set_wide_handle(true);
 }
 
-void LogView::load(Gio::InputStream &is) {
-	gint64 startTime = g_get_monotonic_time();
-
+void LogView::load(Glib::RefPtr<Gio::InputStream> is) {
 	reset();
+
 	size_t index = 0;
+	size_t startIndex = 0;
 	const size_t bufsize = 4096;
 
-	std::vector<size_t> indexes;
-	indexes.push_back(0);
-
 	while (1) {
-		input_.resize(index + bufsize);
-		ssize_t n = is.read(input_.data() + index, bufsize);
+		{
+			std::unique_lock<std::recursive_mutex> lock(mut_);
+			input_.resize(index + bufsize);
+		}
+
+		ssize_t n = is->read(input_.data() + index, bufsize);
+
 		if (n <= 0) {
 			input_[index++] = '\0';
+			if (input_[startIndex] != '\0') {
+				std::unique_lock<std::recursive_mutex> lock(mut_);
+				inputLines_.push_back(startIndex);
+			}
+			startIndex = index;
 			break;
 		}
 
@@ -134,30 +141,11 @@ void LogView::load(Gio::InputStream &is) {
 				}
 				ch = '\0';
 
-				indexes.push_back(index);
+				std::unique_lock<std::recursive_mutex> lock(mut_);
+				inputLines_.push_back(startIndex);
+				startIndex = index;
 			}
 		}
-	}
-
-	// Newlines are often a terminator, not a separator
-	if (input_[indexes.back()] == '\0') {
-		indexes.pop_back();
-	}
-
-	gint64 duration = g_get_monotonic_time() - startTime;
-	logln(
-			"Loaded " << indexes.back() << " lines "
-			<< "(" << input_.size() / 1000000.0 << "mb) in "
-			<< (duration / 1000) << "ms.");
-
-	inputLines_.reserve(indexes.size());
-	for (size_t index: indexes) {
-		inputLines_.push_back(input_.data() + index);
-	}
-
-	if (inputLines_.size() == 0) {
-		update();
-		return;
 	}
 
 	update();
@@ -182,12 +170,14 @@ void LogView::patternsUpdated() {
 }
 
 void LogView::search(std::shared_ptr<Pattern> pattern) {
+	std::unique_lock<std::recursive_mutex> lock(mut_);
 	unsearch();
 
 	size_t count = 0;
 	int width = maxWidth_;
 	for (size_t i = 0; i < inputLines_.size(); ++i) {
-		if (!pattern->matches(inputLines_[i])) {
+		const char *line = input_.data() + inputLines_[i];
+		if (!pattern->matches(line)) {
 			continue;
 		}
 
@@ -200,7 +190,7 @@ void LogView::search(std::shared_ptr<Pattern> pattern) {
 		}
 
 		searchResults_.push_back(SearchResult{
-				{inputLines_[i], pixelsPerLine_, pattern->bg_, pattern->fg_},
+				{line, pixelsPerLine_, pattern->bg_, pattern->fg_},
 				i + 1});
 		auto &result = searchResults_.back();
 
@@ -265,6 +255,7 @@ void LogView::search(std::shared_ptr<Pattern> pattern) {
 }
 
 void LogView::unsearch() {
+	std::unique_lock<std::recursive_mutex> lock(mut_);
 	searchPattern_.reset();
 	searchResults_.clear();
 	highlightedSearchResult_ = -1;
@@ -275,6 +266,7 @@ void LogView::unsearch() {
 }
 
 void LogView::reset() {
+	std::unique_lock<std::recursive_mutex> lock(mut_);
 	unsearch();
 	widgets_.clear();
 	input_.clear();
@@ -285,6 +277,7 @@ void LogView::reset() {
 }
 
 void LogView::update() {
+	std::unique_lock<std::recursive_mutex> lock(mut_);
 	if (inputLines_.size() == 0) {
 		return;
 	}
@@ -360,7 +353,7 @@ void LogView::update() {
 }
 
 std::unique_ptr<LogLine> LogView::makeWidget(size_t line) {
-	const char *text = inputLines_[line];
+	const char *text = input_.data() + inputLines_[line];
 	Gdk::RGBA bg = bg_, fg = fg_;
 	if (searchPattern_ && searchPattern_->matches(text)) {
 		bg = searchPattern_->bg_;

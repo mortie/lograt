@@ -13,7 +13,7 @@ class MainWindow: public Gtk::Window {
 public:
 	MainWindow();
 
-	void load(Gio::InputStream &stream);
+	void load(Glib::RefPtr<Gio::InputStream> stream);
 
 private:
 	void onNewPatterns(std::vector<std::shared_ptr<Pattern>> patterns);

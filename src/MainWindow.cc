@@ -33,9 +33,9 @@ MainWindow::MainWindow() {
 			sigc::mem_fun(this, &MainWindow::onUnsearch));
 }
 
-void MainWindow::load(Gio::InputStream &stream) {
+void MainWindow::load(Glib::RefPtr<Gio::InputStream> stream) {
 	try {
-		logView_.load(stream);
+		logView_.load(std::move(stream));
 	} catch (Gio::Error &err) {
 		logln(err.what());
 		Gtk::MessageDialog dialog("Open file failed", false, Gtk::MESSAGE_ERROR);
@@ -73,6 +73,6 @@ void MainWindow::onOpenButton() {
 	if (res == Gtk::RESPONSE_ACCEPT) {
 		auto file = chooser->get_file();
 		auto stream = file->read();
-		load(*stream.get());
+		load(std::move(stream));
 	}
 }

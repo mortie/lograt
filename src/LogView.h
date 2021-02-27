@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include <string>
+#include <mutex>
 #include <type_traits>
 
 #include "Pattern.h"
@@ -38,7 +40,7 @@ public:
 	LogView(Gdk::RGBA bg, Gdk::RGBA fg);
 	Gtk::Widget &operator()() { return paned_; }
 
-	void load(Gio::InputStream &is);
+	void load(Glib::RefPtr<Gio::InputStream> is);
 	void setColors(Gdk::RGBA bg, Gdk::RGBA fg);
 	void setPatterns(std::vector<std::shared_ptr<Pattern>> patterns);
 	void patternsUpdated();
@@ -78,6 +80,7 @@ private:
 
 	std::unordered_map<size_t, std::unique_ptr<LogLine>> widgets_;
 
+	std::recursive_mutex mut_;
 	std::vector<char> input_;
-	std::vector<char *> inputLines_;
+	std::vector<size_t> inputLines_;
 };
