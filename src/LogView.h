@@ -6,7 +6,6 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include <mutex>
 #include <type_traits>
 
 #include "Pattern.h"
@@ -40,7 +39,7 @@ public:
 	LogView(Gdk::RGBA bg, Gdk::RGBA fg);
 	Gtk::Widget &operator()() { return paned_; }
 
-	void load(Glib::RefPtr<Gio::InputStream> is);
+	void load(Glib::RefPtr<Gio::InputStream> stream);
 	void setColors(Gdk::RGBA bg, Gdk::RGBA fg);
 	void setPatterns(std::vector<std::shared_ptr<Pattern>> patterns);
 	void patternsUpdated();
@@ -60,6 +59,7 @@ private:
 
 	void onScroll();
 	void onResize(Gdk::Rectangle &rect);
+	void onLoadData(const Glib::RefPtr<Gio::AsyncResult> &result);
 
 	Gtk::Paned paned_{Gtk::ORIENTATION_VERTICAL};
 
@@ -80,7 +80,13 @@ private:
 
 	std::unordered_map<size_t, std::unique_ptr<LogLine>> widgets_;
 
-	std::recursive_mutex mut_;
+	struct LoadContext {
+		Glib::RefPtr<Gio::Cancellable> cancelLoad;
+		size_t index = 0;
+		size_t startIndex = 0;
+		static constexpr size_t BUFSIZE = 4096;
+	} loadContext_;
+
 	std::vector<char> input_;
 	std::vector<size_t> inputLines_;
 };

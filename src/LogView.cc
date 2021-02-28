@@ -107,48 +107,25 @@ LogView::LogView(Gdk::RGBA bg, Gdk::RGBA fg): bg_(bg), fg_(fg) {
 	paned_.set_wide_handle(true);
 }
 
-void LogView::load(Glib::RefPtr<Gio::InputStream> is) {
+void LogView::load(Glib::RefPtr<Gio::InputStream> stream) {
 	reset();
 
-	size_t index = 0;
-	size_t startIndex = 0;
-	const size_t bufsize = 4096;
+	auto &lc = loadContext_;
 
-	while (1) {
-		{
-			std::unique_lock<std::recursive_mutex> lock(mut_);
-			input_.resize(index + bufsize);
-		}
-
-		ssize_t n = is->read(input_.data() + index, bufsize);
-
-		if (n <= 0) {
-			input_[index++] = '\0';
-			if (input_[startIndex] != '\0') {
-				std::unique_lock<std::recursive_mutex> lock(mut_);
-				inputLines_.push_back(startIndex);
-			}
-			startIndex = index;
-			break;
-		}
-
-		size_t end = index + n;
-		while (index < end) {
-			char &ch = input_[index++];
-			if (ch == '\n' || ch == '\r') {
-				if (ch == '\r') {
-					index += 1;
-				}
-				ch = '\0';
-
-				std::unique_lock<std::recursive_mutex> lock(mut_);
-				inputLines_.push_back(startIndex);
-				startIndex = index;
-			}
-		}
+	if (lc.cancelLoad.get()) {
+		printf("cancel old load\n");
+		lc.cancelLoad->cancel();
 	}
 
-	update();
+	lc.cancelLoad = Gio::Cancellable::create();
+
+	lc.index = 0;
+	lc.startIndex = 0;
+
+	input_.resize(lc.index + lc.BUFSIZE);
+	stream->read_async(
+		input_.data(), lc.BUFSIZE, sigc::mem_fun(this, &LogView::onLoadData),
+		lc.cancelLoad);
 }
 
 void LogView::setColors(Gdk::RGBA bg, Gdk::RGBA fg) {
@@ -170,7 +147,6 @@ void LogView::patternsUpdated() {
 }
 
 void LogView::search(std::shared_ptr<Pattern> pattern) {
-	std::unique_lock<std::recursive_mutex> lock(mut_);
 	unsearch();
 
 	size_t count = 0;
@@ -255,7 +231,6 @@ void LogView::search(std::shared_ptr<Pattern> pattern) {
 }
 
 void LogView::unsearch() {
-	std::unique_lock<std::recursive_mutex> lock(mut_);
 	searchPattern_.reset();
 	searchResults_.clear();
 	highlightedSearchResult_ = -1;
@@ -266,7 +241,6 @@ void LogView::unsearch() {
 }
 
 void LogView::reset() {
-	std::unique_lock<std::recursive_mutex> lock(mut_);
 	unsearch();
 	widgets_.clear();
 	input_.clear();
@@ -274,10 +248,10 @@ void LogView::reset() {
 	inputLines_.clear();
 	inputLines_.shrink_to_fit();
 	maxWidth_ = 0;
+	update();
 }
 
 void LogView::update() {
-	std::unique_lock<std::recursive_mutex> lock(mut_);
 	if (inputLines_.size() == 0) {
 		return;
 	}
@@ -383,4 +357,53 @@ void LogView::onScroll() {
 
 void LogView::onResize(Gdk::Rectangle &rect) {
 	update();
+}
+
+void LogView::onLoadData(const Glib::RefPtr<Gio::AsyncResult> &result) {
+	auto &lc = loadContext_;
+
+	auto stream = Glib::RefPtr<Gio::InputStream>::cast_static(result->get_source_object());
+	gssize n;
+	try {
+		n = stream->read_finish(result);
+	} catch (const Glib::Error &err) {
+		if (err.code() == Gio::Error::CANCELLED) {
+			return; // Not exceptional, the stream just got cancelled
+		}
+
+		// Re-throw other errors though
+		throw err;
+	}
+
+	if (n <= 0) {
+		input_[lc.index++] = '\0';
+		if (input_[lc.startIndex] != '\0') {
+			inputLines_.push_back(lc.startIndex);
+			update();
+		}
+		lc.startIndex = lc.index;
+		return;
+	}
+
+	size_t end = lc.index + n;
+	while (lc.index < end) {
+		char &ch = input_[lc.index++];
+		if (ch == '\n' || ch == '\r') {
+			if (ch == '\r') {
+				lc.index += 1;
+			}
+			ch = '\0';
+
+			inputLines_.push_back(lc.startIndex);
+			lc.startIndex = lc.index;
+
+			container_.set_size_request(-1, inputLines_.size() * pixelsPerLine_);
+			update();
+		}
+	}
+
+	input_.resize(lc.index + lc.BUFSIZE);
+	stream->read_async(
+			input_.data() + lc.index, lc.BUFSIZE, sigc::mem_fun(this, &LogView::onLoadData),
+			lc.cancelLoad);
 }
