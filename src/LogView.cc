@@ -384,6 +384,7 @@ void LogView::onLoadData(const Glib::RefPtr<Gio::AsyncResult> &result) {
 		return;
 	}
 
+	bool foundNewLine = false;
 	size_t end = lc.index + n;
 	while (lc.index < end) {
 		char &ch = input_[lc.index++];
@@ -396,8 +397,17 @@ void LogView::onLoadData(const Glib::RefPtr<Gio::AsyncResult> &result) {
 			inputLines_.push_back(lc.startIndex);
 			lc.startIndex = lc.index;
 
-			container_.set_size_request(-1, inputLines_.size() * pixelsPerLine_);
-			update();
+			foundNewLine = true;
+		}
+	}
+
+	if (foundNewLine) {
+		container_.set_size_request(-1, inputLines_.size() * pixelsPerLine_);
+		update();
+
+		// TODO: Don't do this horribly inefficiently
+		if (searchPattern_) {
+			search(std::move(searchPattern_));
 		}
 	}
 
