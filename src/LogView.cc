@@ -113,7 +113,6 @@ void LogView::load(Glib::RefPtr<Gio::InputStream> stream) {
 	auto &lc = loadContext_;
 
 	if (lc.cancelLoad.get()) {
-		printf("cancel old load\n");
 		lc.cancelLoad->cancel();
 	}
 
