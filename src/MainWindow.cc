@@ -7,7 +7,7 @@ MainWindow::MainWindow() {
 	set_default_size(200, 200);
 
 	openButton_.signal_clicked().connect(
-			sigc::mem_fun(this, &MainWindow::onOpenButton));
+			sigc::mem_fun(this, &MainWindow::showFilePicker));
 
 	headerBar_.set_title("Lograt");
 	headerBar_.set_show_close_button(true);
@@ -45,6 +45,22 @@ void MainWindow::load(Glib::RefPtr<Gio::InputStream> stream) {
 	}
 }
 
+void MainWindow::showFilePicker() {
+	auto chooser = Gtk::FileChooserNative::create(
+			"Open Log File", Gtk::FILE_CHOOSER_ACTION_OPEN);
+	if (prevOpenDirUri_.size() > 0) {
+		chooser->set_current_folder_uri(prevOpenDirUri_);
+	}
+
+	auto res = chooser->run();
+	prevOpenDirUri_ = chooser->get_current_folder_uri();
+	if (res == Gtk::RESPONSE_ACCEPT) {
+		auto file = chooser->get_file();
+		auto stream = file->read();
+		load(std::move(stream));
+	}
+}
+
 void MainWindow::onNewPatterns(std::vector<std::shared_ptr<Pattern>> patterns) {
 	logView_.setPatterns(std::move(patterns));
 }
@@ -59,20 +75,4 @@ void MainWindow::onSearch(std::shared_ptr<Pattern> pattern) {
 
 void MainWindow::onUnsearch() {
 	logView_.unsearch();
-}
-
-void MainWindow::onOpenButton() {
-	auto chooser = Gtk::FileChooserNative::create(
-			"Open Log File", Gtk::FILE_CHOOSER_ACTION_OPEN);
-	if (prevOpenDirUri_.size() > 0) {
-		chooser->set_current_folder_uri(prevOpenDirUri_);
-	}
-
-	auto res = chooser->run();
-	prevOpenDirUri_ = chooser->get_current_folder_uri();
-	if (res == Gtk::RESPONSE_ACCEPT) {
-		auto file = chooser->get_file();
-		auto stream = file->read();
-		load(std::move(stream));
-	}
 }

@@ -36,5 +36,10 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	app->set_accel_for_action("app.open", "<Control>o");
+	app->add_action("open", [&]() {
+		window.showFilePicker();
+	});
+
 	return app->run(window);
 }

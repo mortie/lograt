@@ -15,13 +15,13 @@ public:
 
 	void load(Glib::RefPtr<Gio::InputStream> stream);
 
+	void showFilePicker();
+
 private:
 	void onNewPatterns(std::vector<std::shared_ptr<Pattern>> patterns);
 	void onPatternsUpdated();
 	void onSearch(std::shared_ptr<Pattern> pattern);
 	void onUnsearch();
-
-	void onOpenButton();
 
 	LogView logView_{textBgColor, textFgColor};
 	PatternEditor patternEditor_;
