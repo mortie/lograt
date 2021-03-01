@@ -49,6 +49,21 @@ std::unique_ptr<PatternEditor::PatternBox> PatternEditor::makePatternBox(
 
 	auto onChange = [pat = pat.get(), this]() { onPatternChanged(pat); };
 
+	auto onSearchClicked = [pat = pat.get(), this](Gtk::EntryIconPosition pos, const GdkEventButton *evt) {
+		if (evt->button == 1) {
+			emitSearch(pat->patternRx.get_text().c_str());
+		}
+	};
+
+	auto onKeyPress = [pat = pat.get(), this](const GdkEventKey *evt) {
+		if (evt->keyval == GDK_KEY_Return && evt->state & GDK_CONTROL_MASK) {
+			emitSearch(pat->patternRx.get_text().c_str());
+			return true;
+		}
+
+		return false;
+	};
+
 	std::string err = pat->pattern->compile();
 	if (err.size() > 0) {
 		pat->error.set_text(err);
@@ -63,6 +78,9 @@ std::unique_ptr<PatternEditor::PatternBox> PatternEditor::makePatternBox(
 	pat->patternRx.set_text(rx);
 	pat->patternRx.signal_activate().connect(onChange);
 	pat->patternRx.signal_changed().connect(onChange);
+	pat->patternRx.signal_icon_press().connect(onSearchClicked);
+	pat->patternRx.signal_key_press_event().connect(onKeyPress);
+	pat->patternRx.set_icon_from_icon_name("search", Gtk::ENTRY_ICON_SECONDARY);
 	pat->box.add(pat->patternRx);
 
 	pat->background.set_rgba(bg);
