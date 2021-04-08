@@ -40,7 +40,6 @@ public:
 	Gtk::Widget &operator()() { return paned_; }
 
 	void load(Glib::RefPtr<Gio::InputStream> stream);
-	void setColors(Gdk::RGBA bg, Gdk::RGBA fg);
 	void setPatterns(std::vector<std::shared_ptr<Pattern>> patterns);
 	void patternsUpdated();
 	void search(std::shared_ptr<Pattern> pattern);

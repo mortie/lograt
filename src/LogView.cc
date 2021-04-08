@@ -22,6 +22,16 @@ void LogLine::setHighlighted(bool hl) {
 	if (hl != isHighlighted_) {
 		isHighlighted_ = hl;
 		queue_draw();
+
+		if (hl) {
+			Pango::AttrList attrs;
+			auto bold = Pango::Attribute::create_attr_weight(Pango::WEIGHT_BOLD);
+			attrs.insert(bold);
+			layout_->set_attributes(attrs);
+		} else {
+			Pango::AttrList attrs;
+			layout_->set_attributes(attrs);
+		}
 	}
 }
 
@@ -73,8 +83,8 @@ void LogLine::on_realize() {
 }
 
 bool LogLine::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
-	Gdk::RGBA bg = isHighlighted_ ? highlightBgColor : bg_;
-	Gdk::RGBA fg = isHighlighted_ ? textFgColor : fg_;
+	Gdk::RGBA bg = isHighlighted_ ? fg_ : bg_;
+	Gdk::RGBA fg = isHighlighted_ ? bg_ : fg_;
 
 	const Gtk::Allocation alloc = get_allocation();
 	cr->set_source_rgb(bg.get_red(), bg.get_green(), bg.get_blue());
@@ -125,13 +135,6 @@ void LogView::load(Glib::RefPtr<Gio::InputStream> stream) {
 	stream->read_async(
 		input_.data(), lc.BUFSIZE, sigc::mem_fun(this, &LogView::onLoadData),
 		lc.cancelLoad);
-}
-
-void LogView::setColors(Gdk::RGBA bg, Gdk::RGBA fg) {
-	bg_ = bg;
-	fg_ = fg;
-	widgets_.clear();
-	update();
 }
 
 void LogView::setPatterns(std::vector<std::shared_ptr<Pattern>> patterns) {

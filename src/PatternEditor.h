@@ -43,7 +43,7 @@ private:
 	void emitCurrentPatterns();
 	void deletePattern(PatternBox *box);
 	void movePattern(PatternBox *box, int direction);
-	void emitSearch(const char *rx);
+	void emitSearch(const char *rx, Gdk::RGBA bg, Gdk::RGBA fg);
 
 	void onPatternSubmit();
 	void onPatternChanged(PatternBox *box);

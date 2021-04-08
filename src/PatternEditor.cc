@@ -51,13 +51,17 @@ std::unique_ptr<PatternEditor::PatternBox> PatternEditor::makePatternBox(
 
 	auto onSearchClicked = [pat = pat.get(), this](Gtk::EntryIconPosition pos, const GdkEventButton *evt) {
 		if (evt->button == 1) {
-			emitSearch(pat->patternRx.get_text().c_str());
+			emitSearch(
+					pat->patternRx.get_text().c_str(),
+					pat->pattern->bg_, pat->pattern->fg_);
 		}
 	};
 
 	auto onKeyPress = [pat = pat.get(), this](const GdkEventKey *evt) {
 		if (evt->keyval == GDK_KEY_Return && evt->state & GDK_CONTROL_MASK) {
-			emitSearch(pat->patternRx.get_text().c_str());
+			emitSearch(
+					pat->patternRx.get_text().c_str(),
+					pat->pattern->bg_, pat->pattern->fg_);
 			return true;
 		}
 
@@ -191,14 +195,13 @@ void PatternEditor::movePattern(PatternBox *fromBox, int direction) {
 	emitCurrentPatterns();
 }
 
-void PatternEditor::emitSearch(const char *rx) {
+void PatternEditor::emitSearch(const char *rx, Gdk::RGBA bg, Gdk::RGBA fg) {
 	if (rx[0] == '\0') {
 		signalUnsearch_.emit();
 		return;
 	}
 
-	auto pattern = std::make_shared<Pattern>(
-			rx, searchBgColor, textFgColor);
+	auto pattern = std::make_shared<Pattern>(rx, bg, fg);
 	std::string error = pattern->compile();
 	if (error.size() > 0) {
 		Gtk::MessageDialog dialog("Search regex error", false, Gtk::MESSAGE_ERROR);
@@ -249,13 +252,19 @@ void PatternEditor::onPatternChanged(PatternBox *box) {
 
 void PatternEditor::onSearchClicked(Gtk::EntryIconPosition pos, const GdkEventButton *evt) {
 	if (evt->button == 1) {
-		emitSearch(newPatternRx_.get_text().c_str());
+		emitSearch(
+				newPatternRx_.get_text().c_str(),
+				newPatternBackground_.get_rgba(),
+				newPatternForeground_.get_rgba());
 	}
 }
 
 bool PatternEditor::onRxKeyPress(const GdkEventKey *evt) {
 	if (evt->keyval == GDK_KEY_Return && evt->state & GDK_CONTROL_MASK) {
-		emitSearch(newPatternRx_.get_text().c_str());
+		emitSearch(
+				newPatternRx_.get_text().c_str(),
+				newPatternBackground_.get_rgba(),
+				newPatternForeground_.get_rgba());
 		return true;
 	}
 
