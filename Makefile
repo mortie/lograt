@@ -1,33 +1,79 @@
-BUILD := build
+SRCS = \
+	src/LogView.cc \
+	src/main.cc \
+	src/MainWindow.cc \
+	src/Pattern.cc \
+	src/PatternEditor.cc \
+#
 
+PKGS := gtkmm-3.0 libpcre2-8
+WARNINGS := -Wall -Wextra -Wpedantic -Wno-unused-parameter
+INCLUDES := -Isrc
+
+FLAGS := $(WARNINGS) $(INCLUDES)
+CXXFLAGS = $(FLAGS) -std=c++17
+CFLAGS = $(FLAGS)
+LDFLAGS :=
+LDLIBS :=
+
+HASH :=
+OUT ?= build$(HASH)
+CC ?= cc
+CXX ?= c++
 PKG_CONFIG ?= pkg-config
 
-DESTDIR ?=
-PREFIX ?= /usr/local
-BINDIR ?= $(PREFIX)/bin
-DATAROOTDIR ?= $(PREFIX)/share
+ifneq ($(PKGS),)
+FLAGS += $(shell $(PKG_CONFIG) --cflags $(PKGS))
+LDLIBS += $(shell $(PKG_CONFIG) --libs $(PKGS))
+endif
 
-SRCS := $(wildcard src/*.cc)
-HDRS := $(wildcard src/*.h)
-OBJS := $(patsubst %,$(BUILD)/%.o,$(SRCS))
+ifneq ($(SANITIZE),)
+HASH := $(HASH)-sanitize-$(SANITIZE)
+LDFLAGS += -fsanitize=$(SANITIZE)
+FLAGS += -fsanitize=$(SANITIZE)
+endif
 
-PKGS := gtkmm-3.0
-FLAGS := -Wall -Wextra -Wno-unused-parameter -Wpedantic -g -std=c++17 \
-	$(shell $(PKG_CONFIG) --cflags $(PKGS))
-LDLIBS := -lpcre2-8 \
-	$(shell $(PKG_CONFIG) --libs $(PKGS))
+ifeq ($(RELEASE),1)
+HASH := $(HASH)-release
+FLAGS += -O2 -DNDEBUG
+else
+HASH := $(HASH)-debug
+FLAGS += -g
+endif
 
-$(BUILD)/lograt: $(OBJS)
+ifeq ($(VERBOSE),1)
+define exec
+	@echo '$(1):' $(2)
+	@$(2)
+endef
+else
+define exec
+	@echo '$(1)' $@
+	@$(2) || (echo '$(1) $@:' $(2) >&2 && false)
+endef
+endif
+
+$(OUT)/target: $(patsubst %,$(OUT)/%.o,$(SRCS))
 	@mkdir -p $(@D)
-	$(CXX) -o $@ $(OBJS) $(LDLIBS)
+	$(call exec,LD ,$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS))
 
-$(BUILD)/%.o: % $(HDRS)
+$(OUT)/%.cc.o: %.cc $(OUT)/%.cc.d
 	@mkdir -p $(@D)
-	$(CXX) $(FLAGS) -o $@ -c $<
+	$(call exec,CXX,$(CXX) $(CXXFLAGS) -MMD -o $@ -c $<)
+$(OUT)/%.cc.d: %.cc;
+
+$(OUT)/%.c.o: %.c $(OUT)/%.c.d
+	@mkdir -p $(@D)
+	$(call exec,CC ,$(CC) $(CFLAGS) -MMD -o $@ -c $<)
+$(OUT)/%.c.d: %.c;
+
+ifneq ($(filter clean,$(MAKECMDGOALS)),clean)
+-include $(patsubst %,$(OUT)/%.d,$(SRCS))
+endif
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD)
+	rm -rf $(OUT)
 
 .PHONY: install
 install: $(BUILD)/lograt lograt.desktop icons/lograt.svg
