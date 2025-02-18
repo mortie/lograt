@@ -1,37 +1,31 @@
 #pragma once
 
 #include <gtkmm.h>
+#include <gtkmm/drawingarea.h>
 #include <giomm/inputstream.h>
 #include <unordered_map>
 #include <vector>
 #include <memory>
-#include <string>
-#include <type_traits>
 
 #include "Pattern.h"
 
-class LogLine: public Gtk::Widget {
+class LogLine {
 public:
 	LogLine(const char *text, int height, Gdk::RGBA bg, Gdk::RGBA fg);
 
 	void setHighlighted(bool hl);
-
-protected:
-	void get_preferred_width_vfunc(int &min, int &nat) const final override;
-	void get_preferred_width_for_height_vfunc(int h, int &min, int &nat) const final override;
-	void get_preferred_height_vfunc(int &min, int &nat) const final override;
-	void get_preferred_height_for_width_vfunc(int w, int &min, int &nat) const final override;
-	void on_size_allocate(Gtk::Allocation &allocation) final override;
-	void on_realize() final override;
-	bool on_draw(const Cairo::RefPtr<Cairo::Context> &cr) final override;
+	Gtk::DrawingArea &widget() { return area_; }
 
 private:
+	void draw(const Cairo::RefPtr<Cairo::Context> &cr, int width, int height);
+
 	static constexpr int HPADDING = 4;
 	const char *text_;
 	int height_;
 	Gdk::RGBA bg_, fg_;
 	bool isHighlighted_ = false;
 	Glib::RefPtr<Pango::Layout> layout_;
+	Gtk::DrawingArea area_;
 };
 
 class LogView {
@@ -47,20 +41,19 @@ public:
 
 private:
 	struct SearchResult {
-		LogLine widget;
+		LogLine line;
 		size_t lineNum;
 	};
 
 	void reset();
 	void update();
 
-	std::unique_ptr<LogLine> makeWidget(size_t line);
+	std::unique_ptr<LogLine> makeLine(size_t line);
 
 	void onScroll();
-	void onResize(Gdk::Rectangle &rect);
 	void onLoadData(const Glib::RefPtr<Gio::AsyncResult> &result);
 
-	Gtk::Paned paned_{Gtk::ORIENTATION_VERTICAL};
+	Gtk::Paned paned_{Gtk::Orientation::VERTICAL};
 
 	int pixelsPerLine_ = 20;
 	int maxWidth_ = 0;
@@ -77,7 +70,7 @@ private:
 	Gtk::ScrolledWindow searchWindow_;
 	Gtk::Fixed searchContainer_;
 
-	std::unordered_map<size_t, std::unique_ptr<LogLine>> widgets_;
+	std::unordered_map<size_t, std::unique_ptr<LogLine>> lines_;
 
 	struct LoadContext {
 		Glib::RefPtr<Gio::Cancellable> cancelLoad;

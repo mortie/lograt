@@ -9,35 +9,39 @@ PatternEditor::PatternEditor() {
 	newPatternBackground_.set_tooltip_text("Background Color");
 	newPatternForeground_.set_hexpand(true);
 	newPatternForeground_.set_tooltip_text("Foreground Color");
-	newPatternColorBox_.add(newPatternBackground_);
-	newPatternColorBox_.add(newPatternForeground_);
+	newPatternColorBox_.append(newPatternBackground_);
+	newPatternColorBox_.append(newPatternForeground_);
 
 	newPatternBackground_.set_rgba(patternBgColors[0]);
 	newPatternForeground_.set_rgba(textFgColor);
 
 	newPatternRx_.set_placeholder_text("Pattern RegEx");
-	newPatternRx_.set_icon_from_icon_name("search", Gtk::ENTRY_ICON_SECONDARY);
-	newPatternBox_.add(newPatternRx_);
-	newPatternBox_.add(newPatternColorBox_);
-	newPatternBox_.add(newPatternAdd_);
+	newPatternRx_.set_icon_from_icon_name("search", Gtk::Entry::IconPosition::SECONDARY);
+	newPatternBox_.append(newPatternRx_);
+	newPatternBox_.append(newPatternColorBox_);
+	newPatternBox_.append(newPatternAdd_);
 
-	newPatternFrame_.add(newPatternBox_);
+	newPatternFrame_.set_child(newPatternBox_);
 	newPatternFrame_.set_margin_bottom(10);
 
-	container_.add(newPatternFrame_);
+	container_.append(newPatternFrame_);
 	container_.set_hexpand(false);
 
-	window_.add(container_);
-	window_.set_policy(Gtk::POLICY_NEVER, Gtk::POLICY_AUTOMATIC);
+	window_.set_child(container_);
+	window_.set_policy(Gtk::PolicyType::NEVER, Gtk::PolicyType::AUTOMATIC);
 
 	newPatternRx_.signal_activate().connect(
-			sigc::mem_fun(this, &PatternEditor::onPatternSubmit));
+			sigc::mem_fun(*this, &PatternEditor::onPatternSubmit));
 	newPatternRx_.signal_icon_press().connect(
-			sigc::mem_fun(this, &PatternEditor::onSearchClicked));
+			sigc::mem_fun(*this, &PatternEditor::onSearchClicked));
 	newPatternAdd_.signal_clicked().connect(
-			sigc::mem_fun(this, &PatternEditor::onPatternSubmit));
-	newPatternRx_.signal_key_press_event().connect(
-			sigc::mem_fun(this, &PatternEditor::onRxKeyPress));
+			sigc::mem_fun(*this, &PatternEditor::onPatternSubmit));
+
+	auto rxEntryController = Gtk::EventControllerKey::create();
+	rxEntryController->signal_key_pressed().connect(
+			sigc::mem_fun(*this, &PatternEditor::onRxKeyPress), false);
+
+	newPatternRx_.add_controller(std::move(rxEntryController));
 }
 
 PatternEditor::PatternBox::PatternBox(const char *rx, Gdk::RGBA bg, Gdk::RGBA fg):
@@ -49,16 +53,15 @@ std::unique_ptr<PatternEditor::PatternBox> PatternEditor::makePatternBox(
 
 	auto onChange = [pat = pat.get(), this]() { onPatternChanged(pat); };
 
-	auto onSearchClicked = [pat = pat.get(), this](Gtk::EntryIconPosition pos, const GdkEventButton *evt) {
-		if (evt->button == 1) {
-			emitSearch(
-					pat->patternRx.get_text().c_str(),
-					pat->pattern->bg_, pat->pattern->fg_);
-		}
+	auto onSearchClicked = [pat = pat.get(), this](Gtk::Entry::IconPosition pos) {
+		emitSearch(
+				pat->patternRx.get_text().c_str(),
+				pat->pattern->bg_, pat->pattern->fg_);
 	};
 
-	auto onKeyPress = [pat = pat.get(), this](const GdkEventKey *evt) {
-		if (evt->keyval == GDK_KEY_Return && evt->state & GDK_CONTROL_MASK) {
+	auto onKeyPress = [pat = pat.get(), this](guint keyval, guint keycode, Gdk::ModifierType state) {
+		bool ctrl = (state & Gdk::ModifierType::CONTROL_MASK) != Gdk::ModifierType::NO_MODIFIER_MASK;
+		if (keyval == GDK_KEY_Return && ctrl) {
 			emitSearch(
 					pat->patternRx.get_text().c_str(),
 					pat->pattern->bg_, pat->pattern->fg_);
@@ -72,20 +75,23 @@ std::unique_ptr<PatternEditor::PatternBox> PatternEditor::makePatternBox(
 	if (err.size() > 0) {
 		pat->error.set_text(err);
 	}
-	pat->error.set_line_wrap(true);
+	//pat->error.set_line_wrap(true);
 	pat->error.set_margin_top(5);
 	pat->error.set_margin_bottom(5);
-	pat->error.set_margin_left(5);
-	pat->error.set_margin_right(5);
+	//pat->error.set_margin_left(5);
+	//pat->error.set_margin_right(5);
 
-	pat->box.add(pat->error);
+	auto rxEntryController = Gtk::EventControllerKey::create();
+	rxEntryController->signal_key_pressed().connect(onKeyPress, false);
+
+	pat->box.append(pat->error);
 	pat->patternRx.set_text(rx);
 	pat->patternRx.signal_activate().connect(onChange);
 	pat->patternRx.signal_changed().connect(onChange);
 	pat->patternRx.signal_icon_press().connect(onSearchClicked);
-	pat->patternRx.signal_key_press_event().connect(onKeyPress);
-	pat->patternRx.set_icon_from_icon_name("search", Gtk::ENTRY_ICON_SECONDARY);
-	pat->box.add(pat->patternRx);
+	pat->patternRx.add_controller(rxEntryController);
+	pat->patternRx.set_icon_from_icon_name("search", Gtk::Entry::IconPosition::SECONDARY);
+	pat->box.append(pat->patternRx);
 
 	pat->background.set_rgba(bg);
 	pat->background.set_hexpand(true);
@@ -93,33 +99,32 @@ std::unique_ptr<PatternEditor::PatternBox> PatternEditor::makePatternBox(
 	pat->foreground.set_rgba(fg);
 	pat->foreground.set_hexpand(true);
 	pat->foreground.signal_color_set().connect(onChange);
-	pat->colorBox.add(pat->background);
-	pat->colorBox.add(pat->foreground);
-	pat->box.add(pat->colorBox);
+	pat->colorBox.append(pat->background);
+	pat->colorBox.append(pat->foreground);
+	pat->box.append(pat->colorBox);
 
 	pat->deleteButton.set_hexpand(true);
 	pat->deleteButton.signal_clicked().connect([pat = pat.get(), this]() {
 		deletePattern(pat);
 	});
-	pat->actionBox.add(pat->deleteButton);
+	pat->actionBox.append(pat->deleteButton);
 
 	pat->upButton.set_hexpand(true);
 	pat->upButton.signal_clicked().connect([pat = pat.get(), this]() {
 		movePattern(pat, -1);
 	});
-	pat->actionBox.add(pat->upButton);
+	pat->actionBox.append(pat->upButton);
 
 	pat->downButton.set_hexpand(true);
 	pat->downButton.signal_clicked().connect([pat = pat.get(), this]() {
 		movePattern(pat, 1);
 	});
-	pat->actionBox.add(pat->downButton);
+	pat->actionBox.append(pat->downButton);
 
-	pat->box.add(pat->actionBox);
+	pat->box.append(pat->actionBox);
 
 	pat->box.set_hexpand(false);
-	pat->frame.add(pat->box);
-	pat->frame.show_all();
+	pat->frame.set_child(pat->box);
 	pat->frame.set_margin_top(10);
 	pat->frame.set_margin_bottom(10);
 
@@ -186,9 +191,9 @@ void PatternEditor::movePattern(PatternBox *fromBox, int direction) {
 
 	gint fromIdx = fromIt - patterns_.begin();
 	if (direction < 0) {
-		container_.reorder_child((*fromBox)(), fromIdx);
+		container_.reorder_child_after((*fromBox)(), (*patterns_[fromIdx])());
 	} else {
-		container_.reorder_child((*fromBox)(), fromIdx + 2);
+		container_.reorder_child_after((*fromBox)(), (*patterns_[fromIdx + 2])());
 	}
 
 	fromIt->swap(*toIt);
@@ -204,10 +209,10 @@ void PatternEditor::emitSearch(const char *rx, Gdk::RGBA bg, Gdk::RGBA fg) {
 	auto pattern = std::make_shared<Pattern>(rx, bg, fg);
 	std::string error = pattern->compile();
 	if (error.size() > 0) {
-		Gtk::MessageDialog dialog("Search regex error", false, Gtk::MESSAGE_ERROR);
+		Gtk::MessageDialog dialog("Search regex error", false, Gtk::MessageType::ERROR);
 		dialog.set_secondary_text(error);
 		dialog.error_bell();
-		dialog.run();
+		//dialog.run();
 		return;
 	}
 
@@ -223,7 +228,7 @@ void PatternEditor::onPatternSubmit() {
 	auto bg = newPatternBackground_.get_rgba();
 	auto fg = newPatternForeground_.get_rgba();
 	patterns_.push_back(makePatternBox(rx.c_str(), bg, fg));
-	container_.add((*patterns_.back())());
+	container_.append((*patterns_.back())());
 
 	emitCurrentPatterns();
 
@@ -250,17 +255,16 @@ void PatternEditor::onPatternChanged(PatternBox *box) {
 	signalPatternsUpdated_.emit();
 }
 
-void PatternEditor::onSearchClicked(Gtk::EntryIconPosition pos, const GdkEventButton *evt) {
-	if (evt->button == 1) {
-		emitSearch(
-				newPatternRx_.get_text().c_str(),
-				newPatternBackground_.get_rgba(),
-				newPatternForeground_.get_rgba());
-	}
+void PatternEditor::onSearchClicked(Gtk::Entry::IconPosition pos) {
+	emitSearch(
+			newPatternRx_.get_text().c_str(),
+			newPatternBackground_.get_rgba(),
+			newPatternForeground_.get_rgba());
 }
 
-bool PatternEditor::onRxKeyPress(const GdkEventKey *evt) {
-	if (evt->keyval == GDK_KEY_Return && evt->state & GDK_CONTROL_MASK) {
+bool PatternEditor::onRxKeyPress(guint keyval, guint keycode, Gdk::ModifierType state) {
+	bool ctrl = (state & Gdk::ModifierType::CONTROL_MASK) != Gdk::ModifierType::NO_MODIFIER_MASK;
+	if (keyval == GDK_KEY_Return && ctrl) {
 		emitSearch(
 				newPatternRx_.get_text().c_str(),
 				newPatternBackground_.get_rgba(),

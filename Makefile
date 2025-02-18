@@ -6,7 +6,7 @@ SRCS = \
 	src/PatternEditor.cc \
 #
 
-PKGS := gtkmm-3.0 libpcre2-8
+PKGS := gtkmm-4.0 libpcre2-8
 WARNINGS := -Wall -Wextra -Wpedantic -Wno-unused-parameter
 INCLUDES := -Isrc
 

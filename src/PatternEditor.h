@@ -24,14 +24,14 @@ private:
 
 		std::shared_ptr<Pattern> pattern;
 		Gtk::Frame frame;
-		Gtk::Box box{Gtk::ORIENTATION_VERTICAL};
+		Gtk::Box box{Gtk::Orientation::VERTICAL};
 		Gtk::Label error;
 		Gtk::Entry patternRx;
-		Gtk::Box colorBox{Gtk::ORIENTATION_HORIZONTAL};
+		Gtk::Box colorBox{Gtk::Orientation::HORIZONTAL};
 		Gtk::ColorButton background;
 		Gtk::ColorButton foreground;
 
-		Gtk::Box actionBox{Gtk::ORIENTATION_HORIZONTAL};
+		Gtk::Box actionBox{Gtk::Orientation::HORIZONTAL};
 		Gtk::Button deleteButton{"X"};
 		Gtk::Button upButton{"ᐃ"};
 		Gtk::Button downButton{"ᐁ"};
@@ -47,17 +47,17 @@ private:
 
 	void onPatternSubmit();
 	void onPatternChanged(PatternBox *box);
-	void onSearchClicked(Gtk::EntryIconPosition pos, const GdkEventButton *evt);
-	bool onRxKeyPress(const GdkEventKey *evt);
+	void onSearchClicked(Gtk::Entry::IconPosition pos);
+	bool onRxKeyPress(guint keyval, guint keycode, Gdk::ModifierType state);
 
 	std::vector<std::unique_ptr<PatternBox>> patterns_;
 	Gtk::ScrolledWindow window_;
-	Gtk::Box container_{Gtk::ORIENTATION_VERTICAL};
+	Gtk::Box container_{Gtk::Orientation::VERTICAL};
 
 	Gtk::Frame newPatternFrame_;
-	Gtk::Box newPatternBox_{Gtk::ORIENTATION_VERTICAL};
+	Gtk::Box newPatternBox_{Gtk::Orientation::VERTICAL};
 	Gtk::Entry newPatternRx_;
-	Gtk::Box newPatternColorBox_{Gtk::ORIENTATION_HORIZONTAL};
+	Gtk::Box newPatternColorBox_{Gtk::Orientation::HORIZONTAL};
 	Gtk::ColorButton newPatternBackground_{};
 	Gtk::ColorButton newPatternForeground_{};
 	Gtk::Button newPatternAdd_{"Add"};

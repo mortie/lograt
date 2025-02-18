@@ -25,7 +25,7 @@ private:
 
 	LogView logView_{textBgColor, textFgColor};
 	PatternEditor patternEditor_;
-	Gtk::Paned mainBox_{Gtk::ORIENTATION_HORIZONTAL};
+	Gtk::Paned mainBox_{Gtk::Orientation::HORIZONTAL};
 
 	Gtk::HeaderBar headerBar_;
 	Gtk::Button openButton_{"Open"};
