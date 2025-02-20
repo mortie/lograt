@@ -5,14 +5,14 @@
 #include "MainWindow.h"
 #include "log.h"
 
+#ifdef __APPLE__
+#define HOTKEY_MODIFIER "<Meta>"
+#else
+#define HOTKEY_MODIFIER "<Control>"
+#endif
+
 int main(int argc, char* argv[]) {
 	auto app = Gtk::Application::create("coffee.mort.lograt");
-
-	/*
-	MainWindow window;
-	window.set_default_icon_name("lograt");
-	window.set_default_size(1000, 600);
-	*/
 
 	/*
 #ifdef __unix__
@@ -38,10 +38,14 @@ int main(int argc, char* argv[]) {
 	}
 	*/
 
-	app->set_accel_for_action("app.open", "<Control>o");
-	app->add_action("open", [&]() {
+	app->set_accel_for_action("app.open", HOTKEY_MODIFIER "o");
+	app->add_action("open", [&] {
 		auto *win = static_cast<MainWindow *>(app->get_run_window());
 		win->showFilePicker();
+	});
+
+	app->add_action("quit", [&] {
+		app->quit();
 	});
 
 	return app->make_window_and_run<MainWindow>(argc, argv);

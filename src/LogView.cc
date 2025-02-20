@@ -6,7 +6,7 @@
 #include "log.h"
 
 LogLine::LogLine(const char *text, int height, Gdk::RGBA bg, Gdk::RGBA fg):
-		text_(text), height_(height), bg_(bg), fg_(fg) {
+		height_(height), bg_(bg), fg_(fg) {
 	Pango::FontDescription font;
 	font.set_family("Monospace");
 	font.set_size((height / 2) * Pango::SCALE);

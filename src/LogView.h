@@ -20,7 +20,6 @@ private:
 	void draw(const Cairo::RefPtr<Cairo::Context> &cr, int width, int height);
 
 	static constexpr int HPADDING = 4;
-	const char *text_;
 	int height_;
 	Gdk::RGBA bg_, fg_;
 	bool isHighlighted_ = false;
